@@ -80,10 +80,13 @@ Saved/*
 Intermediate/Build/*
 Intermediate/ThirdParty/ZXing/*/Makefile
 Intermediate/ThirdParty/ZXing/*/*.*
-Intermediate/ThirdParty/ZXing/*/core/*
+Intermediate/ThirdParty/ZXing/Mac/core/*
+Intermediate/ThirdParty/ZXing/Android/core/*
+Intermediate/ThirdParty/ZXing/iOS/core/*
 Intermediate/ThirdParty/ZXing/*/CMakeFiles/*
 Intermediate/ThirdParty/ZXing/Win64/core/*.*
 Intermediate/ThirdParty/ZXing/Win64/core/CMakeFiles/*
+Intermediate/ThirdParty/ZXing/Win64/x64/*
 Intermediate/ThirdParty/ZXing/Win64/core/ZXing.dir/*
 Intermediate/ThirdParty/ZXing/Win64/core/Release/*
 Plugins/*/Intermediate/*
