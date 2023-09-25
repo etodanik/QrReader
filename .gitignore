@@ -52,7 +52,7 @@ SourceArt/**/*.png
 SourceArt/**/*.tga
 
 # Binary Files
-Binaries/*
+Binaries/*/**
 Plugins/*/Binaries/*
 
 # Builds
@@ -77,7 +77,15 @@ Build/*/**
 Saved/*
 
 # Compiled source files for the engine to use
-Intermediate/*
+Intermediate/Build/*
+Intermediate/ThirdParty/ZXing/*/Makefile
+Intermediate/ThirdParty/ZXing/*/*.*
+Intermediate/ThirdParty/ZXing/*/core/*
+Intermediate/ThirdParty/ZXing/*/CMakeFiles/*
+Intermediate/ThirdParty/ZXing/Win64/core/*.*
+Intermediate/ThirdParty/ZXing/Win64/core/CMakeFiles/*
+Intermediate/ThirdParty/ZXing/Win64/core/ZXing.dir/*
+Intermediate/ThirdParty/ZXing/Win64/core/Release/*
 Plugins/*/Intermediate/*
 
 # Cache files for the editor to use
