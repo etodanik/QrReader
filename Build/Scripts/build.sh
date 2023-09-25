@@ -136,15 +136,3 @@ case $TargetPlatform in
         exit 1
         ;;
 esac
-
-
-
-# echo "Building ZXing for Mac..."
-# echo "Source Directory: \"$(PluginDir)/Source/ThirdParty/ZXing/zxing-cpp\""
-# echo "Build Directory: \"$(PluginDir)/Intermediate/ThirdParty/ZXing/Mac\""
-# cmake -S $(PluginDir)/Source/ThirdParty/ZXing/zxing-cpp -B $(PluginDir)/Intermediate/ThirdParty/ZXing/Mac -DCMAKE_BUILD_TYPE=Release -DBUILD_READERS=ON -DBUILD_WRITERS=OFF -DBUILD_SHARED_LIBS=OFF -DBUILD_UNIT_TESTS=OFF -DBUILD_BLACKBOX_TESTS=OFF -DBUILD_EXAMPLES=OFF -DCMAKE_OSX_DEPLOYMENT_TARGET=11.0
-# cmake --build $(PluginDir)/Intermediate/ThirdParty/ZXing/Mac -j8 --config Release
-# cmake -S $(PluginDir)/Source/ThirdParty/ZXing/zxing-cpp -B $(PluginDir)/Intermediate/ThirdParty/ZXing/Mac -DCMAKE_BUILD_TYPE=Release -DBUILD_READERS=ON -DBUILD_WRITERS=OFF -DBUILD_SHARED_LIBS=ON -DBUILD_UNIT_TESTS=OFF -DBUILD_BLACKBOX_TESTS=OFF -DBUILD_EXAMPLES=OFF -DCMAKE_OSX_DEPLOYMENT_TARGET=11.0
-# cmake --build $(PluginDir)/Intermediate/ThirdParty/ZXing/Mac -j8 --config Release
-# mkdir -p $(PluginDir)/Binaries/ThirdParty/ZXing/Mac
-# rsync -Lu $(PluginDir)/Intermediate/ThirdParty/ZXing/Mac/core/libZXing.dylib $(PluginDir)/Binaries/ThirdParty/ZXing/Mac/libZXing.dylib
