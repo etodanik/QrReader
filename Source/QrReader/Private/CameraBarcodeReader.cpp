@@ -1,6 +1,6 @@
 ﻿#pragma once
 
-#include "..\Public\CameraBarcodeReader.h"
+#include "CameraBarcodeReader.h"
 
 #include "MediaCaptureSupport.h"
 #include "CoreMinimal.h"
@@ -10,7 +10,6 @@
 #include "ZXingUnreal.h"
 #include "Engine/TextureRenderTarget2D.h"
 #include "Components/OverlaySlot.h"
-#include "Components/ScaleBoxSlot.h"
 
 UCameraBarcodeReader::UCameraBarcodeReader(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer),
@@ -55,7 +54,6 @@ void UCameraBarcodeReader::InitializeDynamicMaterial()
 
 			if (Image)
 			{
-				
 				Image->SetBrushFromMaterial(DynamicMaterial);
 				auto AspectRatio = MediaPlayer->GetVideoTrackAspectRatio(0, 0);
 				UE_LOG(LogTemp, Log, TEXT("AspectRatio: %f"), AspectRatio);

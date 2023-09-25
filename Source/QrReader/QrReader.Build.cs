@@ -28,7 +28,6 @@ public class QrReader : ModuleRules
 				"Core",
 				"UMG",
 				"DeveloperSettings",
-				"CommonUI",
 				"ZXingUnreal",
 				// ... add other public dependencies that you statically link with here ...
 			}

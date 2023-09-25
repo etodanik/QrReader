@@ -21,7 +21,15 @@ public class ZXing : ModuleRules {
     }
     else if (Target.Platform == UnrealTargetPlatform.Android)
     {
-      PublicAdditionalLibraries.Add(Path.Combine(ZXignIntermediatePath, "Android", "core", "Release", "libZXing.a"));
+      if (BuildHostPlatform.Current.Platform == UnrealTargetPlatform.Mac)
+      {
+        PublicAdditionalLibraries.Add(Path.Combine(ZXignIntermediatePath, "Android", "core", "libZXing.a"));
+      }
+      else if (BuildHostPlatform.Current.Platform == UnrealTargetPlatform.Win64)
+      {
+        PublicAdditionalLibraries.Add(Path.Combine(ZXignIntermediatePath, "Android", "core", "Release", "libZXing.a"));
+      }
+      
       RuntimeDependencies.Add(Path.Combine(ZXingBinariesPath, "Android", "libZXing.so"));
     }
   } 

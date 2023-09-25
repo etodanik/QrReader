@@ -52,6 +52,12 @@ $args = @(
 # Check the target platform
 switch ($TargetPlatform) {
     "Win64" {
+        # Exit early if the files are already built
+        if ((Test-Path "$BinariesDir\ZXing.dll") -and (Test-Path "$BuildDir\core\Release\ZXing.lib")) {
+            Write-Host "Both ZXing.dll and ZXing.lib already exist. Exiting early with success."
+            exit 0
+        }
+
         $args = $args + @(
             "-DBUILD_SHARED_LIBS=ON"
         );
@@ -68,6 +74,12 @@ switch ($TargetPlatform) {
     }
     
     "Android" {
+        # Exit early if the files are already built
+        if ((Test-Path "$BinariesDir\libZXing.so") -and (Test-Path "$BuildDir\core\Release\libZXing.a")) {
+            Write-Host "Both libZXing.so and libZXing.a already exist. Exiting early with success."
+            exit 0
+        }
+
         Write-Host "Building ZXing for Android..."
         Write-Host "NDKROOT: $env:NDKROOT"
         Write-Host "ANDROID_HOME: $env:ANDROID_HOME"

@@ -50,15 +50,26 @@ args=(
 # Check the target platform
 case $TargetPlatform in
     "Mac")
+        if [[ -f "$BinariesDir/libZXing.dylib" && -f "$BuildDir/core/libZXing.a" ]]; then
+          echo "Both libZXing.dylib and libZXing.a already exist. Exiting early with success."
+          exit 0
+        fi
+        
         args+=(
           "-DCMAKE_OSX_DEPLOYMENT_TARGET=11.0"
         )
 
-        cmake "${args[@]} -DBUILD_SHARED_LIBS=OFF"
-        cmake --build "$BuildDir" -j8 --config Release
+        cmake=$(which cmake)
 
-        cmake "${args[@]} -DBUILD_SHARED_LIBS=ON"
-        cmake --build "$BuildDir" -j8 --config Release
+        echo "$cmake ${args[@]} -DBUILD_SHARED_LIBS=OFF"
+        "$cmake" "${args[@]}" -DBUILD_SHARED_LIBS=OFF
+        echo "$cmake --build \"$BuildDir\" -j8 --config Release"
+        "$cmake" --build "$BuildDir" -j8 --config Release
+
+        echo "$cmake ${args[@]} -DBUILD_SHARED_LIBS=ON"
+        "$cmake" "${args[@]}" -DBUILD_SHARED_LIBS=ON
+        echo "$cmake --build \"$BuildDir\" -j8 --config Release"
+        "$cmake" --build "$BuildDir" -j8 --config Release
         
         ArtifactPath="$BuildDir/core/libZXing.dylib"
         if [[ ! -f "$ArtifactPath" ]]; then
@@ -70,6 +81,11 @@ case $TargetPlatform in
         ;;
 
     "Android")
+        if [[ -f "$BinariesDir/libZXing.so" && -f "$BuildDir/core/libZXing.a" ]]; then
+          echo "Both libZXing.so and libZXing.a already exist. Exiting early with success."
+          exit 0
+        fi
+
         echo "Building ZXing for Android..."
         echo "NDKROOT: $NDKROOT"
         echo "ANDROID_HOME: $ANDROID_HOME"
