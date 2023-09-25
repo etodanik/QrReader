@@ -67,6 +67,14 @@ Build/*/**
 !Build/Scripts
 !Build/Scripts/*
 
+# Whitelist artifacts
+!Binaries/**/libZXing.so
+!Binaries/**/libZXing.dylib
+!Binaries/**/ZXing.dll
+!Intermediate/**/libZXing.a
+!Intermediate/**/ZXing.lib
+
+
 # Don't ignore icon files in Build
 !Build/**/*.ico
 
