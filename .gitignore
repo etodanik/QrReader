@@ -67,14 +67,6 @@ Build/*/**
 !Build/Scripts
 !Build/Scripts/*
 
-# Whitelist artifacts
-!Binaries/**/libZXing.so
-!Binaries/**/libZXing.dylib
-!Binaries/**/ZXing.dll
-!Intermediate/**/libZXing.a
-!Intermediate/**/ZXing.lib
-
-
 # Don't ignore icon files in Build
 !Build/**/*.ico
 
@@ -90,3 +82,10 @@ Plugins/*/Intermediate/*
 
 # Cache files for the editor to use
 DerivedDataCache/*
+
+# Whitelist artifacts
+!libZXing.so
+!libZXing.dylib
+!ZXing.dll
+!libZXing.a
+!ZXing.lib
