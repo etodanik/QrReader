@@ -1,0 +1,58 @@
+{
+	"FileVersion": 3,
+	"Version": 1,
+	"VersionName": "1.0.0",
+	"FriendlyName": "QR Reader",
+	"Description": "A cross platform barcode and QR reader for Unreal",
+	"Category": "Misc",
+	"CreatedBy": "Daniel Povolotski",
+	"CreatedByURL": "https://github.com/israelidanny/unreal-qr-reader",
+	"DocsURL": "https://github.com/israelidanny/unreal-qr-reader",
+	"MarketplaceURL": "",
+	"SupportURL": "https://github.com/israelidanny/unreal-qr-reader",
+	"EngineVersion": [
+		"5.0",
+		"5.1",
+		"5.2",
+		"5.3"
+	],
+	"CanContainContent": true,
+	"Installed": true,
+	"SupportedTargetPlatforms": [
+		"Win64",
+		"Linux",
+		"Mac",
+		"IOS",
+		"Android"	
+	],
+	"Modules": [
+		{
+			"Name": "QrReader",
+			"Type": "Runtime",
+			"LoadingPhase": "Default",
+			"PlatformAllowList": [
+				"Win64",
+				"Linux",
+				"Mac",
+				"iOS",
+				"Android"
+			]
+		} 
+	],
+	"PreBuildSteps": {
+		"Win64": [
+			"powershell.exe -ExecutionPolicy Bypass -File \"$(PluginDir)\\Build\\Scripts\\build.ps1\" -TargetPlatform $(TargetPlatform) -PluginDir \"$(PluginDir)\""
+		],
+		"Mac": [
+			"echo 'Building ZXing for Mac...'",
+			"echo 'Source Directory: '$(PluginDir)/Source/ThirdParty/ZXing/zxing-cpp'",
+			"echo 'Build Directory: '$(PluginDir)/Intermediate/ThirdParty/ZXing/Mac'",
+			"cmake -S $(PluginDir)/Source/ThirdParty/ZXing/zxing-cpp -B $(PluginDir)/Intermediate/ThirdParty/ZXing/Mac -DCMAKE_BUILD_TYPE=Release -DBUILD_READERS=ON -DBUILD_WRITERS=OFF -DBUILD_SHARED_LIBS=OFF -DBUILD_UNIT_TESTS=OFF -DBUILD_BLACKBOX_TESTS=OFF -DBUILD_EXAMPLES=OFF -DCMAKE_OSX_DEPLOYMENT_TARGET=11.0",
+			"cmake --build $(PluginDir)/Intermediate/ThirdParty/ZXing/Mac -j8 --config Release",
+			"cmake -S $(PluginDir)/Source/ThirdParty/ZXing/zxing-cpp -B $(PluginDir)/Intermediate/ThirdParty/ZXing/Mac -DCMAKE_BUILD_TYPE=Release -DBUILD_READERS=ON -DBUILD_WRITERS=OFF -DBUILD_SHARED_LIBS=ON -DBUILD_UNIT_TESTS=OFF -DBUILD_BLACKBOX_TESTS=OFF -DBUILD_EXAMPLES=OFF -DCMAKE_OSX_DEPLOYMENT_TARGET=11.0",
+			"cmake --build $(PluginDir)/Intermediate/ThirdParty/ZXing/Mac -j8 --config Release",
+			"mkdir -p $(PluginDir)/Binaries/ThirdParty/ZXing/Mac",
+			"rsync -Lu $(PluginDir)/Intermediate/ThirdParty/ZXing/Mac/core/libZXing.dylib $(PluginDir)/Binaries/ThirdParty/ZXing/Mac/libZXing.dylib"
+		]
+	}
+}
