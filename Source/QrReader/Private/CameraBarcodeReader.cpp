@@ -1,13 +1,12 @@
 ﻿#pragma once
 
 #include "CameraBarcodeReader.h"
-
 #include "MediaCaptureSupport.h"
+#include "MediaAssets/Public/MediaPlayer.h"
 #include "CoreMinimal.h"
 #include "CanvasItem.h"
 #include "CanvasTypes.h"
 #include "UObject/Object.h"
-#include "ZXingUnreal.h"
 #include "Engine/TextureRenderTarget2D.h"
 #include "Components/OverlaySlot.h"
 
@@ -59,7 +58,6 @@ void UCameraBarcodeReader::InitializeDynamicMaterial()
 				UE_LOG(LogTemp, Log, TEXT("AspectRatio: %f"), AspectRatio);
 				UE_LOG(LogTemp, Log, TEXT("Image Size: %d x %d"), MediaTexture->GetWidth(), MediaTexture->GetHeight());
 				Image->Brush.SetImageSize(FVector2D(MediaTexture->GetHeight(), MediaTexture->GetHeight() / AspectRatio));
-				// Image->Brush.SetImageSize(FVector2D(MediaTexture->GetSurfaceWidth(), MediaTexture->GetSurfaceHeight()));
 				MediaTexture->UpdateResource();
 			}
 		}
@@ -139,7 +137,6 @@ TSharedRef<SWidget> UCameraBarcodeReader::RebuildWidget()
 
 	if (MediaTexture == nullptr && BaseMaterial)
 	{
-		// Link Media Texture to Player
 		MediaTexture = NewObject<UMediaTexture>(this);
 		MediaTexture->AddressX = TA_Clamp;
 		MediaTexture->AddressY = TA_Clamp;
@@ -149,12 +146,13 @@ TSharedRef<SWidget> UCameraBarcodeReader::RebuildWidget()
 
 		TArray<FMediaCaptureDeviceInfo> AvailableDevices;
 		MediaCaptureSupport::EnumerateVideoCaptureDevices(AvailableDevices);
-
-		// Loop through the available devices
+		
 		for (const FMediaCaptureDeviceInfo& Device : AvailableDevices)
 		{
-			// if (Device.Type == EMediaCaptureDeviceType::WebcamRear)
-			if (Device.DisplayName.ToString() == "Camo") // "FaceTime HD Camera"
+			if (
+				(!CameraOverride.IsEmpty() && CameraOverride == Device.DisplayName.ToString()) ||
+				(CameraOverride.IsEmpty() && Device.Type == EMediaCaptureDeviceType::WebcamRear)
+			)
 			{
 				if (DeviceUrl != Device.Url || DeviceDisplayName != Device.DisplayName.ToString())
 				{
@@ -175,7 +173,7 @@ TSharedRef<SWidget> UCameraBarcodeReader::RebuildWidget()
 		}
 	}
 
-	return Image->TakeWidget();
+	return Overlay->TakeWidget();
 }
 
 void UCameraBarcodeReader::CatchMediaOpened(FString OpenedUrl)
@@ -195,12 +193,10 @@ void UCameraBarcodeReader::CatchMediaOpened(FString OpenedUrl)
 void UCameraBarcodeReader::ProcessFrameInBackground()
 {
 	auto Frame = GetFrameFromMaterial();
-
-	// obtain all the pixel information from the mipmaps
+	
 	const FTexture2DMipMap* MipMap = &Frame->GetPlatformData()->Mips[0];
 	const FByteBulkData* RawImageData = &MipMap->BulkData;
-
-	// store in fcolor array
+	
 	EPixelFormat Format = Frame->GetPixelFormat();
 	int32_t Width = Frame->GetSizeX();
 	int32_t Height = Frame->GetSizeY();
@@ -214,7 +210,7 @@ void UCameraBarcodeReader::ProcessFrameInBackground()
 			RawImageData->Unlock();
 			if (Result.Num() > 0)
 			{
-				UE_LOG(LogTemp, Log, TEXT("Found a QR!"));
+				OnBarcodeRead.Broadcast(Result);
 			}
 		});
 	});
@@ -306,6 +302,5 @@ UWorld* UCameraBarcodeReader::GetTickableGameObjectWorld() const
 
 TStatId UCameraBarcodeReader::GetStatId() const
 {
-	// Return the stat ID for your object (this is used by the profiler)
 	return UObject::GetStatID();
 }
