@@ -43,6 +43,9 @@ public class QrReader : ModuleRules
 				"SlateCore",
 				"MediaAssets",
 				"MediaUtils",
+				"RHI",
+				"RenderCore",
+				"AndroidPermission"
 				// ... add private dependencies that you statically link with here ...	
 			}
 		);

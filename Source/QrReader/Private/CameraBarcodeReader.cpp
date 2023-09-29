@@ -4,11 +4,15 @@
 #include "MediaCaptureSupport.h"
 #include "MediaAssets/Public/MediaPlayer.h"
 #include "CoreMinimal.h"
-#include "CanvasItem.h"
-#include "CanvasTypes.h"
+#include "RHI.h"
 #include "UObject/Object.h"
 #include "Engine/TextureRenderTarget2D.h"
 #include "Components/OverlaySlot.h"
+#include "Materials/MaterialRenderProxy.h"
+
+#ifdef PLATFORM_ANDROID
+#include "AndroidPermissionFunctionLibrary.h"
+#endif
 
 UCameraBarcodeReader::UCameraBarcodeReader(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer),
@@ -54,9 +58,7 @@ void UCameraBarcodeReader::InitializeDynamicMaterial()
 			if (Image)
 			{
 				Image->SetBrushFromMaterial(DynamicMaterial);
-				auto AspectRatio = MediaPlayer->GetVideoTrackAspectRatio(0, 0);
-				UE_LOG(LogTemp, Log, TEXT("AspectRatio: %f"), AspectRatio);
-				UE_LOG(LogTemp, Log, TEXT("Image Size: %d x %d"), MediaTexture->GetWidth(), MediaTexture->GetHeight());
+				const auto AspectRatio = MediaPlayer->GetVideoTrackAspectRatio(0, 0);
 				Image->Brush.SetImageSize(FVector2D(MediaTexture->GetHeight(), MediaTexture->GetHeight() / AspectRatio));
 				MediaTexture->UpdateResource();
 			}
@@ -135,6 +137,23 @@ TSharedRef<SWidget> UCameraBarcodeReader::RebuildWidget()
 		return Overlay->TakeWidget();
 	}
 
+#if PLATFORM_ANDROID
+	UAndroidPermissionFunctionLibrary::Initialize();
+	FString Permission = "android.permission.CAMERA";
+	if(!UAndroidPermissionFunctionLibrary::CheckPermission(Permission))
+	{
+		UE_LOG(LogTemp, Warning, TEXT("ANDROID PERMISSION: CAMERA is not granted."));
+
+		// TODO: Replace this with some other fallback
+		if (CalibrationTexture && Image->GetBrush().GetResourceObject() != CalibrationTexture)
+		{
+			Image->SetBrushFromTexture(CalibrationTexture);
+		}
+		
+		return Overlay->TakeWidget();
+	}
+#endif
+
 	if (MediaTexture == nullptr && BaseMaterial)
 	{
 		MediaTexture = NewObject<UMediaTexture>(this);
@@ -149,25 +168,26 @@ TSharedRef<SWidget> UCameraBarcodeReader::RebuildWidget()
 		
 		for (const FMediaCaptureDeviceInfo& Device : AvailableDevices)
 		{
+			UE_LOG(LogTemp, Log, TEXT("Available Device Name: %s, URL: %s, Type: %d"), *Device.DisplayName.ToString(), *Device.Url, Device.Type);
+			
 			if (
 				(!CameraOverride.IsEmpty() && CameraOverride == Device.DisplayName.ToString()) ||
 				(CameraOverride.IsEmpty() && Device.Type == EMediaCaptureDeviceType::WebcamRear)
 			)
 			{
-				if (DeviceUrl != Device.Url || DeviceDisplayName != Device.DisplayName.ToString())
-				{
-					UE_LOG(LogTemp, Log, TEXT("Device Name: %s, URL: %s"), *Device.DisplayName.ToString(), *Device.Url);
-					DeviceUrl = Device.Url;
-					DeviceDisplayName = Device.DisplayName.ToString();
+				UE_LOG(LogTemp, Log, TEXT("Selected Device Name: %s, URL: %s, Type: %d"), *Device.DisplayName.ToString(), *Device.Url, Device.Type);
+				
+				DeviceUrl = Device.Url;
+				DeviceDisplayName = Device.DisplayName.ToString();
 
-					MediaPlayer = NewObject<UMediaPlayer>(this);
-					MediaPlayer->OpenUrl(DeviceUrl);
-					MediaPlayer->PlayOnOpen = true;
-					MediaPlayer->OnMediaOpened.AddDynamic(this, &UCameraBarcodeReader::CatchMediaOpened);
-					MediaPlayer->OnMediaOpenFailed.AddDynamic(this, &UCameraBarcodeReader::CatchMediaOpenFailed);
-					MediaPlayer->OnEndReached.AddDynamic(this, &UCameraBarcodeReader::CatchEndReached);
-					MediaPlayer->OnPlaybackSuspended.AddDynamic(this, &UCameraBarcodeReader::CatchPlaybackSuspended);
-				}
+				MediaPlayer = NewObject<UMediaPlayer>(this);
+				MediaPlayer->OpenUrl(DeviceUrl);
+				MediaPlayer->PlayOnOpen = true;
+				MediaPlayer->OnMediaOpened.AddDynamic(this, &UCameraBarcodeReader::CatchMediaOpened);
+				MediaPlayer->OnMediaOpenFailed.AddDynamic(this, &UCameraBarcodeReader::CatchMediaOpenFailed);
+				MediaPlayer->OnEndReached.AddDynamic(this, &UCameraBarcodeReader::CatchEndReached);
+				MediaPlayer->OnPlaybackSuspended.AddDynamic(this, &UCameraBarcodeReader::CatchPlaybackSuspended);
+				
 				break;
 			}
 		}
@@ -178,7 +198,6 @@ TSharedRef<SWidget> UCameraBarcodeReader::RebuildWidget()
 
 void UCameraBarcodeReader::CatchMediaOpened(FString OpenedUrl)
 {
-	UE_LOG(LogTemp, Warning, TEXT("MediaPlayer opened: %s"), *OpenedUrl);
 	MediaTexture->SetMediaPlayer(MediaPlayer);
 	MediaTexture->UpdateResource();
 
@@ -192,26 +211,26 @@ void UCameraBarcodeReader::CatchMediaOpened(FString OpenedUrl)
 
 void UCameraBarcodeReader::ProcessFrameInBackground()
 {
-	auto Frame = GetFrameFromMaterial();
-	
-	const FTexture2DMipMap* MipMap = &Frame->GetPlatformData()->Mips[0];
-	const FByteBulkData* RawImageData = &MipMap->BulkData;
-	
-	EPixelFormat Format = Frame->GetPixelFormat();
-	int32_t Width = Frame->GetSizeX();
-	int32_t Height = Frame->GetSizeY();
-	const uint8_t* Buffer = static_cast<const uint8*>(RawImageData->LockReadOnly());
-	
-	AsyncTask(ENamedThreads::AnyBackgroundThreadNormalTask, [this, Format, Width, Height, Buffer, RawImageData]()
+	GetFrameFromMaterial([this] (UTexture2D* Frame)
 	{
-		auto Result = UZXingBlueprintFunctionLibrary::ReadBarcodes(this, Format, Width, Height, Buffer);
-		AsyncTask(ENamedThreads::GameThread, [this, Result, RawImageData]()
+		const FTexture2DMipMap* MipMap = &Frame->GetPlatformData()->Mips[0];
+		const FByteBulkData* RawImageData = &MipMap->BulkData;		
+		EPixelFormat Format = Frame->GetPixelFormat();
+		int32_t Width = Frame->GetSizeX();
+		int32_t Height = Frame->GetSizeY();
+		const uint8_t* Buffer = static_cast<const uint8*>(RawImageData->LockReadOnly());
+		
+		AsyncTask(ENamedThreads::AnyBackgroundThreadNormalTask, [this, Format, Width, Height, Buffer, RawImageData]()
 		{
-			RawImageData->Unlock();
-			if (Result.Num() > 0)
+			auto Result = UZXingBlueprintFunctionLibrary::ReadBarcodes(this, Format, Width, Height, Buffer);
+			AsyncTask(ENamedThreads::GameThread, [this, Result, RawImageData]()
 			{
-				OnBarcodeRead.Broadcast(Result);
-			}
+				RawImageData->Unlock();
+				if (Result.Num() > 0)
+				{
+					OnBarcodeRead.Broadcast(Result);
+				}
+			});
 		});
 	});
 }
@@ -233,37 +252,45 @@ void UCameraBarcodeReader::CatchPlaybackSuspended()
 
 UCameraBarcodeReader::~UCameraBarcodeReader()
 {
-	if (MediaPlayer != nullptr)
+	if (MediaPlayer && !MediaPlayer->IsClosed())
 	{
 		MediaPlayer->Close();
-	}
+	}	
+
+	// if (DynamicMaterial)
+	// {
+	// 	DynamicMaterial->SetTextureParameterValue(FName("MediaTexture"), nullptr);
+	// }
 }
 
-UTexture2D* UCameraBarcodeReader::GetFrameFromMaterial()
-{
-	RenderTarget->InitAutoFormat(MediaTexture->GetSurfaceWidth(), MediaTexture->GetSurfaceHeight());
-	FTextureRenderTargetResource* RenderTargetResource = RenderTarget->GameThread_GetRenderTargetResource();
-	FCanvas Canvas(RenderTargetResource, nullptr, GetWorld(), ERHIFeatureLevel::SM6);
-	FCanvasTileItem TileItem(FVector2D(0, 0), DynamicMaterial->GetRenderProxy(),
-	                         FVector2D(MediaTexture->GetSurfaceWidth(), MediaTexture->GetSurfaceHeight()));
-	TileItem.Size = FVector2D(RenderTarget->SizeX, RenderTarget->SizeY);
-	Canvas.DrawItem(TileItem);
-	Canvas.Flush_GameThread();
+void UCameraBarcodeReader::GetFrameFromMaterial(TFunction<void(UTexture2D*)> Callback)
+{		
+	ENQUEUE_RENDER_COMMAND(CaptureMaterialToTexture)(
+		[this, Callback](FRHICommandListImmediate& RHICmdList)
+		{
+			TArray<FColor> OutData;
+			RHICmdList.ReadSurfaceData(
+				 MediaTexture->GetResource()->TextureRHI->GetTexture2D(),
+				 FIntRect(0, 0, MediaTexture->GetSurfaceWidth(), MediaTexture->GetSurfaceHeight()),
+				 OutData,
+				 FReadSurfaceDataFlags()
+			 );			
+			
+			AsyncTask(ENamedThreads::GameThread, [this, Callback, OutData]()
+			{
+				UTexture2D* NewTexture = UTexture2D::CreateTransient(
+				MediaTexture->GetSurfaceWidth(), MediaTexture->GetSurfaceHeight());
+				NewTexture->NeverStream = true;
+				FTexture2DMipMap& Mip = NewTexture->GetPlatformData()->Mips[0];
 
-	TArray<FColor> OutData;
-	RenderTargetResource->ReadPixels(OutData);
-
-	UTexture2D* NewTexture = UTexture2D::CreateTransient(MediaTexture->GetSurfaceWidth(),
-	                                                     MediaTexture->GetSurfaceHeight());
-	NewTexture->NeverStream = true;
-	FTexture2DMipMap& Mip = NewTexture->GetPlatformData()->Mips[0];
-
-	void* Data = Mip.BulkData.Lock(LOCK_READ_WRITE);
-	FMemory::Memcpy(Data, OutData.GetData(), OutData.Num() * sizeof(FColor));
-	Mip.BulkData.Unlock();
-
-	NewTexture->UpdateResource();
-	return NewTexture;
+				void* Data = Mip.BulkData.Lock(LOCK_READ_WRITE);
+				FMemory::Memcpy(Data, OutData.GetData(), OutData.Num() * sizeof(FColor));
+				Mip.BulkData.Unlock();
+				NewTexture->UpdateResource();
+				Callback(NewTexture);
+			});
+		}
+	);
 }
 
 void UCameraBarcodeReader::Tick(float DeltaTime)
@@ -302,5 +329,10 @@ UWorld* UCameraBarcodeReader::GetTickableGameObjectWorld() const
 
 TStatId UCameraBarcodeReader::GetStatId() const
 {
-	return UObject::GetStatID();
+	return GetStatID();
+}
+
+void UCameraBarcodeReader::ReleaseSlateResources(bool bReleaseChildren)
+{
+	Super::ReleaseSlateResources(bReleaseChildren);
 }

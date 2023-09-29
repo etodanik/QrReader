@@ -30,9 +30,6 @@ class QRREADER_API UCameraBarcodeReader : public UWidget, public FTickableGameOb
 	GENERATED_BODY()
 
 public:
-	UCameraBarcodeReader(const FObjectInitializer& ObjectInitializer);
-	virtual TSharedRef<SWidget> RebuildWidget() override;
-
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget))
 	UImage* Image;
 
@@ -58,7 +55,7 @@ public:
 	FOnReadBarcode OnBarcodeRead;
 	
 	virtual ~UCameraBarcodeReader() override;
-	UTexture2D* GetFrameFromMaterial();
+	void GetFrameFromMaterial(TFunction<void(UTexture2D*)> Callback);
 
 	// FTickableGameObject interface
     virtual void Tick(float DeltaTime) override;
@@ -68,20 +65,32 @@ public:
     virtual UWorld* GetTickableGameObjectWorld() const override;
     virtual TStatId GetStatId() const override;
     // End FTickableGameObject interface
+
+	virtual void ReleaseSlateResources(bool bReleaseChildren) override;
 	
 private:
 	void InitializeDynamicMaterial();
-	
-	UMediaPlayer* MediaPlayer;
-	UMediaTexture* MediaTexture;	
+	UCameraBarcodeReader(const FObjectInitializer& ObjectInitializer);
+	virtual TSharedRef<SWidget> RebuildWidget() override;
+
 	FString DeviceUrl;
 	FString DeviceDisplayName;
-	UTexture2D* CalibrationTexture;	
-	UMaterialInterface* BaseMaterial;
-	UMaterialInterface* ViewFinderMaterial;
-	UMaterialInstanceDynamic* DynamicMaterial;
-	UTextureRenderTarget2D* RenderTarget;
 	int32 TickCount;
+
+	UPROPERTY()
+	UMediaPlayer* MediaPlayer;
+	UPROPERTY()
+	UMediaTexture* MediaTexture;	
+	UPROPERTY()
+	UTexture2D* CalibrationTexture;
+	UPROPERTY()
+	UMaterialInterface* BaseMaterial;
+	UPROPERTY()
+	UMaterialInterface* ViewFinderMaterial;
+	UPROPERTY()
+	UMaterialInstanceDynamic* DynamicMaterial;
+	UPROPERTY()
+	UTextureRenderTarget2D* RenderTarget;
 
 	void ProcessFrameInBackground();
 

@@ -30,6 +30,7 @@ public class ZXing : ModuleRules {
         PublicAdditionalLibraries.Add(Path.Combine(ZXignIntermediatePath, "Android", "core", "Release", "libZXing.a"));
       }
       
+      AdditionalPropertiesForReceipt.Add("AndroidPlugin", Path.Combine(ModuleDirectory, "ZXing_APL.xml"));
       RuntimeDependencies.Add(Path.Combine(ZXingBinariesPath, "Android", "libZXing.so"));
     }
   } 
